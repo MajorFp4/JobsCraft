@@ -18,8 +18,8 @@ archivesBaseName = 'jobscraft'
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
 minecraft {
-    // AQUI ESTÁ A CORREÇÃO MAIS IMPORTANTE
-    mappings channel: 'stable', version: '56-1.14.4'
+    // ESTA É A LINHA CORRETA E ORIGINAL PARA O SEU PROJETO
+    mappings channel: 'snapshot', version: '20190719-1.14.3'
 
     runs {
         client {
@@ -32,13 +32,15 @@ minecraft {
                 }
             }
         }
-        // ... resto das seções server e data ...
+        // ... (o resto da seção runs já está correta no seu arquivo)
     }
 }
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.14.4-28.2.26'
 }
+
+// ... (o resto do arquivo, como 'jar' e 'publishing', pode continuar igual)
 
 // Example for how to get properties into the manifest for reading by the runtime..
 jar {

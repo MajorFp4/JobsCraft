@@ -4,8 +4,9 @@ import net.minecraft.block.Block;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
+// IMPORT CORRETO E FINAL PARA A SUA VERSÃO
+import net.minecraft.scoreboard.ScoreCriteria;
+import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.MinecraftForge;
@@ -35,119 +36,68 @@ public class JobsCraft {
         LOGGER.info("JobsCraft está sendo carregado!");
     }
 
-    /**
-     * Este evento é chamado toda vez que um jogador entra em um mundo.
-     * Usaremos para criar os scoreboards se eles não existirem para o jogador.
-     */
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         PlayerEntity player = event.getPlayer();
-        // O código só deve rodar no lado do servidor
         if (player.world.isRemote()) return;
 
         ServerWorld world = (ServerWorld) player.getEntityWorld();
         Scoreboard scoreboard = world.getScoreboard();
 
-        // Nomes dos nossos objetivos
         String skillLevelObjectiveName = "jc_skill_level";
         String professionObjectiveName = "jc_profession";
 
-        // Garante que o objetivo para "Skill Level" exista
+        // NOME CORRETO PARA A SUA VERSÃO: ScoreCriteria (sem I e no plural)
         if (scoreboard.getObjective(skillLevelObjectiveName) == null) {
-            scoreboard.addObjective(skillLevelObjectiveName, ScoreboardCriterion.DUMMY, new StringTextComponent("Skill Level"));
-            LOGGER.info("Scoreboard 'jc_skill_level' criado.");
+            scoreboard.addObjective(skillLevelObjectiveName, ScoreCriteria.DUMMY, new StringTextComponent("Skill Level"), );
         }
-
-        // Garante que o objetivo para "Profession" exista
         if (scoreboard.getObjective(professionObjectiveName) == null) {
-            scoreboard.addObjective(professionObjectiveName, ScoreboardCriterion.DUMMY, new StringTextComponent("Profession"));
-            LOGGER.info("Scoreboard 'jc_profession' criado.");
+            scoreboard.addObjective(professionObjectiveName, ScoreCriteria.DUMMY, new StringTextComponent("Profession"));
         }
 
-        // Inicializa a pontuação do jogador para 1 se ele ainda não tiver uma
-        ScoreboardObjective skillObjective = scoreboard.getObjective(skillLevelObjectiveName);
+        // NOME CORRETO PARA A SUA VERSÃO: ScoreObjective
+        ScoreObjective skillObjective = scoreboard.getObjective(skillLevelObjectiveName);
         String playerName = player.getScoreboardName();
 
         if (!scoreboard.playerHasObjective(playerName, skillObjective)) {
-            LOGGER.info("Inicializando Skill Level para o jogador " + playerName);
-            // Começar em 1 é importante para evitar divisão por zero na sua fórmula!
             scoreboard.getOrCreateScore(playerName, skillObjective).setScorePoints(1);
         }
     }
 
-    /**
-     * Este evento é chamado sempre que um jogador quebra um bloco.
-     */
     @SubscribeEvent
     public void onBlockBreak(BlockEvent.BreakEvent event) {
-        // Garante que a lógica rode apenas no servidor
-        if (event.getPlayer().world.isRemote()) {
-            return;
-        }
-
-        PlayerEntity player = event.getPlayer();
-
-        // TODO: Adicionar a lógica aqui para verificar se a profissão do jogador
-        //       permite ganhar XP ao quebrar este bloco específico.
-
-        // Por enquanto, vamos dar XP por quebrar qualquer bloco para testar a fórmula.
-        addSkillExperience(player);
+        if (event.getPlayer().world.isRemote()) return;
+        addSkillExperience(event.getPlayer());
     }
 
-    /**
-     * Calcula e adiciona a experiência de skill ao jogador com base na sua fórmula.
-     */
     private void addSkillExperience(PlayerEntity player) {
         ServerWorld world = (ServerWorld) player.getEntityWorld();
         Scoreboard scoreboard = world.getScoreboard();
-        ScoreboardObjective skillObjective = scoreboard.getObjective("jc_skill_level");
 
-        // Verificação de segurança caso o objetivo não exista por algum motivo
-        if (skillObjective == null) {
-            LOGGER.error("Objetivo 'jc_skill_level' não encontrado. Não foi possível adicionar XP.");
-            return;
-        }
+        // NOME CORRETO PARA A SUA VERSÃO: ScoreObjective
+        ScoreObjective skillObjective = scoreboard.getObjective("jc_skill_level");
+        if (skillObjective == null) return;
 
         String playerName = player.getScoreboardName();
         Score score = scoreboard.getOrCreateScore(playerName, skillObjective);
-        int currentSkillLevel = score.getScorePoints();
+        int currentSkillLevel = score.getScorePoints() <= 0 ? 1 : score.getScorePoints();
 
-        // Evita divisão por zero
-        if (currentSkillLevel <= 0) {
-            currentSkillLevel = 1;
-        }
-
-        // --- APLICANDO SUA FÓRMULA ---
-        // Fórmula: ((1.1^(10/skill level)) - 1) * 800
         double exponent = 10.0 / currentSkillLevel;
         double xpGainedDouble = (Math.pow(1.1, exponent) - 1) * 800;
+        int xpGained = Math.max(1, (int) Math.round(xpGainedDouble));
 
-        // O scoreboard só aceita inteiros, então arredondamos o resultado.
-        int xpGained = (int) Math.round(xpGainedDouble);
-
-        // Garante que o jogador sempre ganhe pelo menos 1 de XP.
-        if (xpGained < 1) {
-            xpGained = 1;
-        }
-
-        // Adiciona a nova pontuação ao jogador
         score.increaseScore(xpGained);
 
-        // Feedback para o jogador e para o console
         player.sendMessage(new StringTextComponent(String.format("§a+%d Skill XP", xpGained)));
         LOGGER.info(String.format("Jogador %s ganhou %d de XP. Novo Skill Level: %d", playerName, xpGained, score.getScorePoints()));
     }
 
     @SubscribeEvent
-    public void onServerStarting(FMLServerStartingEvent event) {
-        LOGGER.info("JobsCraft - Servidor iniciando.");
-    }
+    public void onServerStarting(FMLServerStartingEvent event) {}
 
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static class RegistryEvents {
         @SubscribeEvent
-        public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {
-            LOGGER.info("JobsCraft - Registrando blocos...");
-        }
+        public static void onBlocksRegistry(final RegistryEvent.Register<Block> blockRegistryEvent) {}
     }
 }
