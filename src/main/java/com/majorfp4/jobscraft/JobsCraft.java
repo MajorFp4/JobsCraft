@@ -1,6 +1,11 @@
 package com.majorfp4.jobscraft;
 
 import com.majorfp4.jobscraft.config.JobsConfig;
+import com.majorfp4.jobscraft.client.ClientSetup;
+import com.majorfp4.jobscraft.config.JobsConfig;
+import com.majorfp4.jobscraft.network.PacketHandler;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -16,9 +21,14 @@ public class JobsCraft {
         modEventBus.addListener(this::commonSetup);
 
         MinecraftForge.EVENT_BUS.register(this);
+
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            new ClientSetup(modEventBus);
+        });
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        JobsConfig.initialize(); // Cria pasta e carrega as profissões
+        JobsConfig.initialize();
+        event.enqueueWork(PacketHandler::register);
     }
 }
