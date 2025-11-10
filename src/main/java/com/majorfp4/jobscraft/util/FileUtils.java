@@ -27,6 +27,8 @@ public class FileUtils {
 
         String content = """
                 name = "Miner"
+                
+                iD = 1
 
                 related_blocks = [
                     "forge:stones",

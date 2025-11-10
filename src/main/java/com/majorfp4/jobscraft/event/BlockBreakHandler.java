@@ -3,9 +3,9 @@ package com.majorfp4.jobscraft.event;
 import com.majorfp4.jobscraft.config.JobsConfig;
 import com.majorfp4.jobscraft.config.Profession;
 import com.majorfp4.jobscraft.JobsCraft;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +18,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Collection;
+import java.util.List;
 
 @Mod.EventBusSubscriber(modid = JobsCraft.MOD_ID)
 public class BlockBreakHandler {
@@ -25,58 +26,66 @@ public class BlockBreakHandler {
     @SubscribeEvent
     public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
         Player player = event.getPlayer();
-        if (player.level.isClientSide) return;
 
-        if (!(player instanceof ServerPlayer serverPlayer)) return;
         BlockState blockState = event.getState();
         Block block = blockState.getBlock();
         ResourceLocation blockRL = ForgeRegistries.BLOCKS.getKey(block);
         if (blockRL == null) return;
 
-        String blockId = blockRL.toString(); // ex: "minecraft:diamond_ore"
-        Scoreboard scoreboard = serverPlayer.getScoreboard();
+        String blockId = blockRL.toString();
+
+        Scoreboard scoreboard = player.getScoreboard();
+
+        Profession matchingProfession = getProfessionByBlock(blockState, blockId);
+        if (matchingProfession == null) {
+            return;
+        }
 
         Objective professionObj = scoreboard.getObjective("profession");
         if (professionObj == null) return;
 
-        // Usar getOrCreatePlayerScore para compatibilidade
-        Score professionScore = scoreboard.getOrCreatePlayerScore(serverPlayer.getScoreboardName(), professionObj);
-        int professionId = professionScore.getScore();
+        Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
 
-        String playerProfession = professionId == 0 ? "NONE" : getProfessionNameById(professionId);
+        int playerProfessionId = professionScore.getScore();
+        int requiredProfessionId = matchingProfession.getId();
 
-        Profession matchingProfession = getProfessionByBlock(blockId);
-        if (matchingProfession == null) return;
+        if (playerProfessionId != requiredProfessionId) {
 
-        // Se o jogador não é da profissão correspondente
-        if (!matchingProfession.getName().equalsIgnoreCase(playerProfession)) {
-
-            // Se for um bloco exclusivo, torna inquebrável
-            if (matchingProfession.getExclusiveBlocks().contains(blockId)) {
+            if (isBlockInList(blockState, blockId, matchingProfession.getExclusiveBlocks())) {
                 event.setNewSpeed(0.0F);
                 return;
             }
 
-            // Se for um bloco relacionado de outra profissão, 70% mais lento
-            if (matchingProfession.getRelatedBlocks().contains(blockId)) {
+            if (isBlockInList(blockState, blockId, matchingProfession.getRelatedBlocks())) {
                 event.setNewSpeed(event.getOriginalSpeed() * 0.3F);
             }
         }
     }
 
-    private static Profession getProfessionByBlock(String blockId) {
+    private static boolean isBlockInList(BlockState state, String blockId, List<String> list) {
+        for (String entry : list) {
+            if (entry.startsWith("#")) {
+                String tagName = entry.substring(1);
+                TagKey<Block> tagKey = BlockTags.create(new ResourceLocation(tagName));
+                if (state.is(tagKey)) {
+                    return true;
+                }
+            } else {
+                if (entry.equals(blockId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Profession getProfessionByBlock(BlockState state, String blockId) {
         Collection<Profession> professions = JobsConfig.getAllProfessions();
         for (Profession p : professions) {
-            if (p.getExclusiveBlocks().contains(blockId) || p.getRelatedBlocks().contains(blockId)) {
+            if (isBlockInList(state, blockId, p.getExclusiveBlocks()) || isBlockInList(state, blockId, p.getRelatedBlocks())) {
                 return p;
             }
         }
         return null;
-    }
-
-    private static String getProfessionNameById(int id) {
-        // Placeholder simples — depois podemos criar mapeamento
-        if (id == 1) return "Minerador";
-        return "NONE";
     }
 }
