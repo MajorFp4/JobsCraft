@@ -7,29 +7,21 @@ public class Profession {
     private final String name;
     private final List<String> relatedBlocks;
     private final List<String> exclusiveBlocks;
+    private final List<String> exclusiveItems;
 
-    public Profession(int id, String name, List<String> relatedBlocks, List<String> exclusiveBlocks) {
+    public Profession(int id, String name, List<String> relatedBlocks, List<String> exclusiveBlocks, List<String> exclusiveItems) {
         this.id = id;
         this.name = name;
         this.relatedBlocks = relatedBlocks;
         this.exclusiveBlocks = exclusiveBlocks;
+        this.exclusiveItems = exclusiveItems;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public List<String> getRelatedBlocks() {
-        return relatedBlocks;
-    }
-
-    public List<String> getExclusiveBlocks() {
-        return exclusiveBlocks;
-    }
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public List<String> getRelatedBlocks() { return relatedBlocks; }
+    public List<String> getExclusiveBlocks() { return exclusiveBlocks; }
+    public List<String> getExclusiveItems() { return exclusiveItems; }
 
     @Override
     public boolean equals(Object o) {

@@ -35,9 +35,9 @@ public class JobsConfig {
                 String name = config.get("name");
                 List<String> relatedBlocks = config.getOrElse("related_blocks", Collections.emptyList());
                 List<String> exclusiveBlocks = config.getOrElse("exclusive_blocks", Collections.emptyList());
+                List<String> exclusiveItems = config.getOrElse("exclusive_items", Collections.emptyList());
 
-                Profession profession = new Profession(id, name, relatedBlocks, exclusiveBlocks);
-
+                Profession profession = new Profession(id, name, relatedBlocks, exclusiveBlocks, exclusiveItems);
                 PROFESSIONS_BY_ID.put(profession.getId(), profession);
 
                 System.out.println("[JobsMod] Profissão carregada: " + name + " (ID: " + id + ")");
