@@ -31,12 +31,11 @@ public class FileUtils {
                 iD = 1
 
                 related_blocks = [
-                    "forge:stones",
-                    "minecraft:cobblestone"
+                    "#forge:stones"
                 ]
 
                 exclusive_blocks = [
-                    "forge:ores",
+                    "#forge:ores"
                 ]
                 """;
 

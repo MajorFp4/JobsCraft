@@ -26,10 +26,6 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = JobsCraft.MOD_ID)
 public class BlockInteractionHandler {
 
-    /**
-     * Impede a INTERAÇÃO (clique direito) e a COLOCAÇÃO de blocos exclusivos.
-     * Este handler roda em AMBOS, cliente e servidor, para prevenir desync.
-     */
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         Player player = event.getPlayer();
@@ -42,17 +38,13 @@ public class BlockInteractionHandler {
         String message = "";
 
         // --- CHECAGEM 1: INTERAÇÃO (Usando um bloco existente) ---
-        // O jogador está tentando USAR um bloco (ex: Crafting Table)?
-        // Verificamos se o bloco clicado é exclusivo.
         if (isInteractionForbidden(player, clickedState)) {
             isForbidden = true;
             message = "Você não tem a profissão para usar este bloco.";
         }
 
         // --- CHECAGEM 2: COLOCAÇÃO (Colocando um bloco novo) ---
-        // O jogador está tentando COLOCAR um bloco?
         if (!isForbidden && itemInHand.getItem() instanceof BlockItem blockItem) {
-            // Se o item na mão for um bloco, checamos esse bloco
             BlockState stateToPlace = blockItem.getBlock().defaultBlockState();
             if (isInteractionForbidden(player, stateToPlace)) {
                 isForbidden = true;
@@ -62,22 +54,13 @@ public class BlockInteractionHandler {
 
         // --- AÇÃO FINAL ---
         if (isForbidden) {
-            // Cancela o evento em ambos os lados.
-            // No Cliente: Impede o "swing" da mão, o "flicker" do item e o "bloco fantasma".
-            // No Servidor: Garante a segurança.
             event.setCanceled(true);
-
-            // Envia a mensagem de erro apenas no lado do cliente para não duplicar.
             if (player.level.isClientSide()) {
-                player.displayClientMessage(new TextComponent(message), true); // Mensagem da barra de ação
+                player.displayClientMessage(new TextComponent(message), true);
             }
         }
     }
 
-    /**
-     * Método auxiliar para checar a lógica de permissão.
-     * Retorna TRUE se a interação for PROIBIDA.
-     */
     private static boolean isInteractionForbidden(Player player, BlockState blockState) {
         ResourceLocation blockRL = ForgeRegistries.BLOCKS.getKey(blockState.getBlock());
         if (blockRL == null) return false;
@@ -86,41 +69,40 @@ public class BlockInteractionHandler {
         // 1. Encontra a profissão que o BLOCO exige
         Profession matchingProfession = getProfessionByBlock(blockState, blockId);
         if (matchingProfession == null) {
-            return false; // Bloco é neutro, permite a interação
+            return false;
         }
 
         // 2. Checa se o bloco está na lista EXCLUSIVA
         if (!isBlockInList(blockState, blockId, matchingProfession.getExclusiveBlocks())) {
-            return false; // Bloco é "relacionado" mas não "exclusivo", permite a interação
+            return false;
         }
 
         // 3. O bloco é exclusivo. O jogador tem a profissão?
         Scoreboard scoreboard = player.getScoreboard();
         Objective professionObj = scoreboard.getObjective("profession");
         if (professionObj == null) {
-            return true; // Placares não carregaram, bloqueia por segurança
+            return true;
         }
 
         Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
         int playerProfessionId = professionScore.getScore();
         int requiredProfessionId = matchingProfession.getId();
 
-        // Retorna TRUE (proibido) se o ID do jogador for DIFERENTE do ID requerido
         return playerProfessionId != requiredProfessionId;
     }
 
 
-    // --- Métodos Auxiliares (copiados do BlockBreakHandler) ---
-
     private static boolean isBlockInList(BlockState state, String blockId, List<String> list) {
         for (String entry : list) {
             if (entry.startsWith("#")) {
+                // É uma Tag
                 String tagName = entry.substring(1);
                 TagKey<Block> tagKey = BlockTags.create(new ResourceLocation(tagName));
                 if (state.is(tagKey)) {
                     return true;
                 }
             } else {
+                // É um Bloco ID
                 if (entry.equals(blockId)) {
                     return true;
                 }

@@ -26,6 +26,7 @@ public class BlockBreakHandler {
     @SubscribeEvent
     public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
         Player player = event.getPlayer();
+        if (player == null) return;
 
         BlockState blockState = event.getState();
         Block block = blockState.getBlock();
@@ -33,7 +34,6 @@ public class BlockBreakHandler {
         if (blockRL == null) return;
 
         String blockId = blockRL.toString();
-
         Scoreboard scoreboard = player.getScoreboard();
 
         Profession matchingProfession = getProfessionByBlock(blockState, blockId);
@@ -43,7 +43,6 @@ public class BlockBreakHandler {
 
         Objective professionObj = scoreboard.getObjective("profession");
         if (professionObj == null) return;
-
         Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
 
         int playerProfessionId = professionScore.getScore();
@@ -65,12 +64,16 @@ public class BlockBreakHandler {
     private static boolean isBlockInList(BlockState state, String blockId, List<String> list) {
         for (String entry : list) {
             if (entry.startsWith("#")) {
-                String tagName = entry.substring(1);
+                // É uma Tag
+                String tagName = entry.substring(1); // Remove o '#'
+                // Cria a "chave" da tag (ex: forge:ores ou forge:ores/gold)
                 TagKey<Block> tagKey = BlockTags.create(new ResourceLocation(tagName));
+                // O Minecraft checa se o bloco (state) pertence a essa tag
                 if (state.is(tagKey)) {
                     return true;
                 }
             } else {
+                // É um Bloco ID (lógica antiga)
                 if (entry.equals(blockId)) {
                     return true;
                 }

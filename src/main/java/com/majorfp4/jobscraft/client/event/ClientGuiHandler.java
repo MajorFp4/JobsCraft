@@ -18,8 +18,8 @@ public class ClientGuiHandler {
             InventoryScreen inventoryScreen = (InventoryScreen) event.getScreen();
 
             // Posição do botão (canto superior esquerdo da GUI do inventário)
-            int x = inventoryScreen.getGuiLeft() + -50; // Posição X
-            int y = inventoryScreen.getGuiTop() + -50;  // Posição Y
+            int x = inventoryScreen.getGuiLeft() + -390; // Posição X
+            int y = inventoryScreen.getGuiTop() + +310;  // Posição Y
             int width = 40;
             int height = 20;
 
