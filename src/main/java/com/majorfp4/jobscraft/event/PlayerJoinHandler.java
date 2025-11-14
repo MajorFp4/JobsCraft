@@ -10,6 +10,12 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import com.majorfp4.jobscraft.JobsCraft;
+import com.majorfp4.jobscraft.network.ClientboundSyncProfessionPacket;
+import com.majorfp4.jobscraft.network.PacketHandler;
+import net.minecraftforge.network.PacketDistributor;
+import com.majorfp4.jobscraft.capability.TechProgressionCapability;
+import com.majorfp4.jobscraft.network.ClientboundSyncProgressPacket;
+import java.util.Collections;
 
 @Mod.EventBusSubscriber(modid = JobsCraft.MOD_ID)
 public class PlayerJoinHandler {
@@ -50,6 +56,17 @@ public class PlayerJoinHandler {
         if (skillScore.getScore() == 0) {
             skillScore.setScore(1);
         }
+        PacketHandler.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> serverPlayer),
+                new ClientboundSyncProfessionPacket(professionScore.getScore())
+        );
+
+        serverPlayer.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
+            PacketHandler.INSTANCE.send(
+                    PacketDistributor.PLAYER.with(() -> serverPlayer),
+                    new ClientboundSyncProgressPacket(progress.getCraftedItems())
+            );
+        });
 
         serverPlayer.displayClientMessage(new TextComponent("Profissão: NONE | Skill: 1"), false);
     }

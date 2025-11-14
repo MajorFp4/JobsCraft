@@ -29,6 +29,10 @@ public class FileUtils {
                 name = "Miner"
                 
                 iD = 1
+                
+                technical_mod = [
+                    "none"
+                ]
 
                 related_blocks = [
                     "#forge:stones"
@@ -36,6 +40,9 @@ public class FileUtils {
 
                 exclusive_blocks = [
                     "#forge:ores"
+                ]
+                
+                base_items = [
                 ]
                 """;
 

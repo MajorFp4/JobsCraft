@@ -24,7 +24,17 @@ public class PacketHandler {
                 ServerboundChangeProfessionPacket::decode,
                 ServerboundChangeProfessionPacket::handle
         );
-
-        // (No futuro, registraremos pacotes Servidor -> Cliente aqui)
+        INSTANCE.registerMessage(id++,
+                ClientboundSyncProfessionPacket.class,
+                ClientboundSyncProfessionPacket::encode,
+                ClientboundSyncProfessionPacket::decode,
+                ClientboundSyncProfessionPacket::handle
+        );
+        INSTANCE.registerMessage(id++,
+                ClientboundSyncProgressPacket.class,
+                ClientboundSyncProgressPacket::encode,
+                ClientboundSyncProgressPacket::decode,
+                ClientboundSyncProgressPacket::handle
+        );
     }
 }

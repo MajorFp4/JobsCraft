@@ -38,3 +38,10 @@ mandatory=true
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="jei"
+mandatory=true
+versionRange="[10.2.1,)" # Qualquer versão do JEI 10.2.1 ou mais nova
+ordering="NONE"
+side="CLIENT"
