@@ -9,9 +9,13 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.runtime.IJeiRuntime;
 import mezz.jei.api.runtime.IIngredientManager;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,6 +59,27 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         }
     }
 
+    private static boolean isItemInList(ItemStack stack, String listEntry) {
+        if (listEntry.startsWith("#")) {
+            // É uma Tag
+            String tagName = listEntry.substring(1);
+            TagKey<Item> tagKey = ItemTags.create(new ResourceLocation(tagName));
+            return stack.is(tagKey);
+        } else {
+            // É um Item ID
+            ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(stack.getItem());
+            return itemRL != null && itemRL.toString().equals(listEntry);
+        }
+    }
+    private static boolean isBaseItem(Profession prof, ItemStack stack) {
+        for (String baseItemEntry : prof.getBaseItems()) {
+            if (isItemInList(stack, baseItemEntry)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Esta é a lógica principal do seu mod!
      * (Esta função estava CORRETA e não precisa de mudanças)
@@ -62,21 +87,20 @@ public class JobsCraftJEIPlugin implements IModPlugin {
     public static boolean isItemVisible(ItemStack itemStack) {
         ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
         if (itemRL == null) {
-            return true; // Se não tem ID, deixa passar
+            return true;
         }
         String itemModId = itemRL.getNamespace();
 
-        // 1. PEGAR PROFISSÃO ATUAL
         Profession currentProfession = JobsConfig.getProfession(ClientCache.CURRENT_PROFESSION_ID);
 
-        // Se o jogador é "NONE" (ID 0) ou a profissão não foi encontrada
+        // Se o jogador é "NONE" (ID 0)
         if (currentProfession == null) {
             Set<String> allTechModIds = JobsConfig.getAllProfessions().stream()
                     .map(Profession::getTechnicalMod)
                     .filter(id -> !id.equals("none"))
                     .collect(Collectors.toSet());
 
-            return !allTechModIds.contains(itemModId); // Esconde se for um mod técnico
+            return !allTechModIds.contains(itemModId);
         }
 
         // 2. O JOGADOR TEM UMA PROFISSÃO
@@ -85,17 +109,21 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         // 3. SE FOR UMA PROFISSÃO TÉCNICA (ex: "mekanism")
         if (!currentTechModId.equals("none")) {
 
+            // Esconde itens de OUTROS mods técnicos
             if (!itemModId.equals(currentTechModId) && !itemModId.equals("minecraft")) {
                 boolean isOtherTechMod = JobsConfig.getAllProfessions().stream()
                         .anyMatch(p -> p.getTechnicalMod().equals(itemModId));
                 if (isOtherTechMod) {
-                    return false; // Esconde (ex: um Técnico de Mekanism não vê itens do Create)
+                    return false;
                 }
             }
 
+            // Se o item for do MOD CORRETO (ex: "mekanism")
             if (itemModId.equals(currentTechModId)) {
-                // LÓGICA TEMPORÁRIA
-                boolean isBaseItem = currentProfession.getBaseItems().contains(itemRL.toString());
+
+                // --- LÓGICA CORRIGIDA ---
+                // Agora usamos a nova função que entende Tags
+                boolean isBaseItem = isBaseItem(currentProfession, itemStack);
                 boolean hasBeenCrafted = ClientCache.CRAFTED_ITEMS.contains(itemRL);
 
                 return isBaseItem || hasBeenCrafted;
@@ -111,6 +139,6 @@ public class JobsCraftJEIPlugin implements IModPlugin {
             return !allTechModIds.contains(itemModId);
         }
 
-        return true; // Se não for pego em nenhuma regra, mostra (ex: itens Vanilla)
+        return true; // Mostra itens (ex: Vanilla)
     }
 }
