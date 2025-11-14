@@ -22,7 +22,6 @@ public class JobsConfig {
         if (files == null || files.length == 0) {
             System.out.println("[JobsMod] Nenhum arquivo de profissão encontrado. Criando exemplo...");
             FileUtils.createExampleProfession(jobsFolder);
-
             loadAllProfessions(jobsFolder);
             return;
         }
@@ -37,7 +36,13 @@ public class JobsConfig {
                 List<String> exclusiveBlocks = config.getOrElse("exclusive_blocks", Collections.emptyList());
                 List<String> exclusiveItems = config.getOrElse("exclusive_items", Collections.emptyList());
 
-                Profession profession = new Profession(id, name, relatedBlocks, exclusiveBlocks, exclusiveItems);
+                String technicalMod = config.getOrElse("technical_mod", "none");
+
+                List<String> baseItems = config.getOrElse("base_items", Collections.emptyList());
+
+                Profession profession = new Profession(id, name, relatedBlocks, exclusiveBlocks, exclusiveItems,
+                        technicalMod, baseItems);
+
                 PROFESSIONS_BY_ID.put(profession.getId(), profession);
 
                 System.out.println("[JobsMod] Profissão carregada: " + name + " (ID: " + id + ")");

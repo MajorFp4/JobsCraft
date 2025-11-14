@@ -122,6 +122,19 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
+    // Repositório oficial do JEI
+    maven { url = "https://maven.blamejared.com" }
+
+    // Repositório alternativo para o Mekanism (substitui o aidancbrady que está com erro SSL)
+    maven { url = "https://modmaven.dev/" }
+
+    // Repositório para o CurseForge (caso precise de outros mods no futuro)
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
 }
 
 dependencies {
@@ -131,6 +144,13 @@ dependencies {
     // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    compileOnly fg.deobf("mezz.jei:jei-1.18.2-common-api:10.2.1.1009")
+    compileOnly fg.deobf("mezz.jei:jei-1.18.2-forge-api:10.2.1.1009")
+    // O mod completo para rodar no jogo
+    runtimeOnly fg.deobf("mezz.jei:jei-1.18.2-forge:10.2.1.1009")
+
+    // Mekanism
+    runtimeOnly fg.deobf("mekanism:Mekanism:1.18.2-10.2.5.465")
 
     // Real mod deobf dependency examples - these get remapped to your current mappings
     // compileOnly fg.deobf("mezz.jei:jei-${mc_version}:${jei_version}:api") // Adds JEI API as a compile dependency

@@ -6,6 +6,10 @@ import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
+import com.majorfp4.jobscraft.capability.TechProgressionCapability;
+import com.majorfp4.jobscraft.network.ClientboundSyncProgressPacket;
+import java.util.Collections;
 
 import java.util.function.Supplier;
 
@@ -48,6 +52,32 @@ public class ServerboundChangeProfessionPacket {
             // ATUALIZA O PLACAR
             Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
             professionScore.setScore(msg.professionId);
+
+            player.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
+                progress.resetProgress();
+            });
+
+            // Envia o novo ID de profissão de volta ao cliente
+            PacketHandler.INSTANCE.send(
+                    PacketDistributor.PLAYER.with(() -> player),
+                    new ClientboundSyncProfessionPacket(msg.professionId)
+            );
+
+            player.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
+                progress.resetProgress(); // Limpa os dados no servidor
+
+                // Envia a lista de progresso VAZIA para o cliente
+                PacketHandler.INSTANCE.send(
+                        PacketDistributor.PLAYER.with(() -> player),
+                        new ClientboundSyncProgressPacket(Collections.emptySet()) // Envia o reset
+                );
+            });
+
+            // Envia o novo ID de PROFISSÃO (código antigo)
+            PacketHandler.INSTANCE.send(
+                    PacketDistributor.PLAYER.with(() -> player),
+                    new ClientboundSyncProfessionPacket(msg.professionId)
+            );
 
             // (Opcional) Enviar mensagem de confirmação
             // player.displayClientMessage(new TextComponent("Profissão alterada!"), false);
