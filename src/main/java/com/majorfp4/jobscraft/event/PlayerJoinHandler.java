@@ -67,7 +67,5 @@ public class PlayerJoinHandler {
                     new ClientboundSyncProgressPacket(progress.getCraftedItems())
             );
         });
-
-        serverPlayer.displayClientMessage(new TextComponent("Profissão: NONE | Skill: 1"), false);
     }
 }
