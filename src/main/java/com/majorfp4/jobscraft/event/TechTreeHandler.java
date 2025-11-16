@@ -62,12 +62,11 @@ public class TechTreeHandler {
 
         player.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
 
-            // A checagem só precisa ser feita UMA VEZ
+            // CORREÇÃO: O bloco estava duplicado. Esta é a versão limpa.
             if (!progress.hasCrafted(craftedItemId)) {
                 System.out.println("[JobsCraft] Jogador " + player.getName().getString() + " desbloqueou: " + craftedItemId);
                 progress.addCraftedItem(craftedItemId);
 
-                // Envia a lista de progresso ATUALIZADA para o cliente
                 PacketHandler.INSTANCE.send(
                         PacketDistributor.PLAYER.with(() -> player),
                         new ClientboundSyncProgressPacket(progress.getCraftedItems())

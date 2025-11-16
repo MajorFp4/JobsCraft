@@ -9,18 +9,17 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.runtime.IJeiRuntime;
 import mezz.jei.api.runtime.IIngredientManager;
 import net.minecraft.resources.ResourceLocation;
+// --- IMPORTAÇÕES NECESSÁRIAS ---
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.List;
-import java.util.HashSet;
+import java.util.List; // <-- IMPORTAÇÃO NECESSÁRIA
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// REMOVEMOS O 'IIngredientManagerListener'
 @JeiPlugin
 public class JobsCraftJEIPlugin implements IModPlugin {
 
