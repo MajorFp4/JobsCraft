@@ -41,6 +41,6 @@ public class ClientGuiHandler {
     public void onTagsUpdated(TagsUpdatedEvent event) {
         System.out.println("[JobsCraft] Tags do cliente sincronizadas. Atualizando filtro do JEI.");
 
-        JobsCraftJEIPlugin.onClientConfigsLoaded();
+        JobsCraftJEIPlugin.refreshJEIFilter();
     }
 }

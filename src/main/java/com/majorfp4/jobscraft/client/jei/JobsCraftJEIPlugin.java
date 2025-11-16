@@ -6,11 +6,14 @@ import com.majorfp4.jobscraft.config.JobsConfig;
 import com.majorfp4.jobscraft.config.Profession;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.ingredients.IIngredientType;
+import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.minecraft.tags.ItemTags;
@@ -22,7 +25,7 @@ public class JobsCraftJEIPlugin implements IModPlugin {
 
     private static final ResourceLocation PLUGIN_UID = new ResourceLocation(JobsCraft.MOD_ID, "main");
     private static IJeiRuntime jeiRuntime;
-    private static boolean hasConfigsLoaded = false;
+    private static final List<ItemStack> MASTER_ITEM_STACK_LIST = new ArrayList<>();
 
     @Override
     public ResourceLocation getPluginUid() {
@@ -32,7 +35,11 @@ public class JobsCraftJEIPlugin implements IModPlugin {
     @Override
     public void onRuntimeAvailable(IJeiRuntime runtime) {
         JobsCraftJEIPlugin.jeiRuntime = runtime;
-        JobsCraftIngredientHider.onIngredientsUpdated(runtime.getIngredientManager());
+        IIngredientManager ingredientManager = runtime.getIngredientManager();
+        IIngredientType<ItemStack> itemType = ingredientManager.getIngredientType(ItemStack.class);
+        MASTER_ITEM_STACK_LIST.clear();
+        MASTER_ITEM_STACK_LIST.addAll(ingredientManager.getAllIngredients(itemType));
+        JobsCraftIngredientHider.onIngredientsUpdated(ingredientManager);
     }
 
     public static void refreshJEIFilter() {
@@ -41,9 +48,8 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         }
     }
 
-    public static void onClientConfigsLoaded() {
-        hasConfigsLoaded = true;
-        refreshJEIFilter();
+    public static List<ItemStack> getMasterItemStackList() {
+        return MASTER_ITEM_STACK_LIST;
     }
 
     private static boolean isItemInList(ItemStack stack, String listEntry) {
@@ -67,9 +73,6 @@ public class JobsCraftJEIPlugin implements IModPlugin {
     }
 
     public static boolean isItemVisible(ItemStack itemStack) {
-        if (!hasConfigsLoaded) {
-            return true;
-        }
 
         ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
         if (itemRL == null) return true;

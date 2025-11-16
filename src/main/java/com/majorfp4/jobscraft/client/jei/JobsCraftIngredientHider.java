@@ -17,7 +17,7 @@ public class JobsCraftIngredientHider {
         List<ItemStack> itemsToHide = new ArrayList<>();
         List<ItemStack> itemsToShow = new ArrayList<>();
 
-        for (ItemStack stack : ingredientManager.getAllIngredients(itemType)) {
+        for (ItemStack stack : JobsCraftJEIPlugin.getMasterItemStackList()) {
             try {
                 if (JobsCraftJEIPlugin.isItemVisible(stack)) {
                     itemsToShow.add(stack);
