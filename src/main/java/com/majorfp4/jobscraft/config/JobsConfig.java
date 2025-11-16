@@ -17,15 +17,26 @@ public class JobsConfig {
     }
 
     private static void loadAllProfessions(Path jobsFolder) {
-        PROFESSIONS_BY_ID.clear();
+        PROFESSIONS_BY_ID.clear(); // Limpa para recarregar
+
         File[] files = jobsFolder.toFile().listFiles((dir, name) -> name.endsWith(".toml"));
+
+        // Se a pasta estiver vazia, cria o exemplo
         if (files == null || files.length == 0) {
             System.out.println("[JobsMod] Nenhum arquivo de profissão encontrado. Criando exemplo...");
-            FileUtils.createExampleProfession(jobsFolder);
-            loadAllProfessions(jobsFolder);
-            return;
+            FileUtils.createExampleProfession(jobsFolder); //
+
+            // CORREÇÃO: Atualiza a lista de arquivos para pegar o que acabamos de criar
+            files = jobsFolder.toFile().listFiles((dir, name) -> name.endsWith(".toml"));
+
+            // Se ainda estiver vazio, algo deu muito errado
+            if (files == null || files.length == 0) {
+                System.err.println("[JobsMod] Falha ao criar ou encontrar arquivos de configuração.");
+                return;
+            }
         }
 
+        // Continua o carregamento (agora com a lista de arquivos correta)
         for (File file : files) {
             try (CommentedFileConfig config = CommentedFileConfig.builder(file).autosave().build()) {
                 config.load();
