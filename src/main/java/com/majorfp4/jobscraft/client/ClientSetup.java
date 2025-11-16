@@ -4,6 +4,8 @@ import com.majorfp4.jobscraft.client.event.ClientGuiHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+// ... (importações no topo)
+import com.majorfp4.jobscraft.client.jei.JobsCraftJEIPlugin; // <-- NOVA IMPORTAÇÃO
 
 /**
  * Lida com o setup que SÓ deve rodar no lado do cliente.
@@ -16,8 +18,7 @@ public class ClientSetup {
     }
 
     private void onClientSetup(final FMLClientSetupEvent event) {
-        // Registra nosso handler de GUI no barramento de eventos principal do Forge
-        // Isso "liga" o @SubscribeEvent dentro de ClientGuiHandler
+        // Registra nosso handler de GUI (código antigo)
         MinecraftForge.EVENT_BUS.register(new ClientGuiHandler());
     }
 }

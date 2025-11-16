@@ -7,60 +7,45 @@ import com.majorfp4.jobscraft.config.Profession;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.runtime.IJeiRuntime;
-import mezz.jei.api.runtime.IIngredientManager;
 import net.minecraft.resources.ResourceLocation;
-// --- IMPORTAÇÕES NECESSÁRIAS ---
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
-
-import java.util.List; // <-- IMPORTAÇÃO NECESSÁRIA
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Collectors;
 
 @JeiPlugin
 public class JobsCraftJEIPlugin implements IModPlugin {
 
     private static final ResourceLocation PLUGIN_UID = new ResourceLocation(JobsCraft.MOD_ID, "main");
     private static IJeiRuntime jeiRuntime;
-
-    // --- NOVA VARIÁVEL DE CONTROLE ---
-    // Impede o JEI de filtrar os itens antes do jogador entrar no mundo
-    private static boolean hasWorldJoined = false;
+    private static boolean hasConfigsLoaded = false;
 
     @Override
     public ResourceLocation getPluginUid() {
         return PLUGIN_UID;
     }
 
-    /**
-     * Chamado quando o JEI está pronto.
-     */
     @Override
     public void onRuntimeAvailable(IJeiRuntime runtime) {
         JobsCraftJEIPlugin.jeiRuntime = runtime;
-
-        // CORREÇÃO: Não filtramos mais na inicialização.
-        // O filtro agora é chamado APENAS pelos pacotes de rede.
-        // JobsCraftIngredientHider.onIngredientsUpdated(runtime.getIngredientManager());
+        JobsCraftIngredientHider.onIngredientsUpdated(runtime.getIngredientManager());
     }
 
-    /**
-     * Este é o "gatilho" que podemos chamar de qualquer lugar para
-     * forçar o JEI a re-filtrar sua lista de itens.
-     */
     public static void refreshJEIFilter() {
-        // CORREÇÃO: Marca que o mundo carregou.
-        hasWorldJoined = true;
-
         if (jeiRuntime != null) {
             JobsCraftIngredientHider.onIngredientsUpdated(jeiRuntime.getIngredientManager());
         }
     }
-    // --- LÓGICA DE CHECAGEM DE TAG (DO ITEMUSEHANDLER) ---
+
+    public static void onClientConfigsLoaded() {
+        hasConfigsLoaded = true;
+        refreshJEIFilter();
+    }
+
     private static boolean isItemInList(ItemStack stack, String listEntry) {
         if (listEntry.startsWith("#")) {
             String tagName = listEntry.substring(1);
@@ -72,7 +57,6 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         }
     }
 
-    // --- MÉTODO AUXILIAR PARA BASE_ITEMS ---
     private static boolean isBaseItem(Profession prof, ItemStack stack) {
         for (String baseItemEntry : prof.getBaseItems()) {
             if (isItemInList(stack, baseItemEntry)) {
@@ -82,41 +66,25 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         return false;
     }
 
-    /**
-     * Lógica principal de visibilidade do JEI
-     */
     public static boolean isItemVisible(ItemStack itemStack) {
-        // --- CORREÇÃO: NÃO FAÇA NADA ATÉ O JOGADOR ENTRAR NO MUNDO ---
-        if (!hasWorldJoined) {
-            return true; // Mostra tudo durante a tela de carregamento
-        }
-        // -----------------------------------------------------------
-
-        ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
-        if (itemRL == null) {
+        if (!hasConfigsLoaded) {
             return true;
         }
-        String itemModId = itemRL.getNamespace();
 
-        // O resto da sua lógica (que estava 100% correta)
+        ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
+        if (itemRL == null) return true;
+        String itemModId = itemRL.getNamespace();
         Profession currentProfession = JobsConfig.getProfession(ClientCache.CURRENT_PROFESSION_ID);
 
-        // --- CASO 1: SEM PROFISSÃO (ID 0) ---
         if (currentProfession == null) {
             Set<String> allTechModIds = JobsConfig.getAllProfessions().stream()
                     .map(Profession::getTechnicalMod)
                     .filter(id -> !id.equals("none"))
                     .collect(Collectors.toSet());
-
             return !allTechModIds.contains(itemModId);
         }
-
-        // --- CASO 2: COM PROFISSÃO ---
         String currentTechModId = currentProfession.getTechnicalMod();
-
-        // SE FOR PROFISSÃO TÉCNICA (ex: "mekanism")
         if (!currentTechModId.equals("none")) {
-
             if (!itemModId.equals(currentTechModId) && !itemModId.equals("minecraft")) {
                 boolean isOtherTechMod = JobsConfig.getAllProfessions().stream()
                         .anyMatch(p -> p.getTechnicalMod().equals(itemModId));
@@ -124,25 +92,18 @@ public class JobsCraftJEIPlugin implements IModPlugin {
                     return false;
                 }
             }
-
             if (itemModId.equals(currentTechModId)) {
-
                 boolean isBaseItem = isBaseItem(currentProfession, itemStack);
                 boolean hasBeenCrafted = ClientCache.CRAFTED_ITEMS.contains(itemRL);
-
                 return isBaseItem || hasBeenCrafted;
             }
-
-        } else { // SE FOR PROFISSÃO NÃO-TÉCNICA (ex: "Mineiro")
-
+        } else {
             Set<String> allTechModIds = JobsConfig.getAllProfessions().stream()
                     .map(Profession::getTechnicalMod)
                     .filter(id -> !id.equals("none"))
                     .collect(Collectors.toSet());
-
             return !allTechModIds.contains(itemModId);
         }
-
         return true;
     }
 }
