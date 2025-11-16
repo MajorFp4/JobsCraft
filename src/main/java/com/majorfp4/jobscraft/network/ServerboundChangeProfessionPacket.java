@@ -38,49 +38,35 @@ public class ServerboundChangeProfessionPacket {
     // Ação a ser executada no Servidor
     public static void handle(ServerboundChangeProfessionPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            // Código executado na thread principal do servidor
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
 
             Scoreboard scoreboard = player.getScoreboard();
             Objective professionObj = scoreboard.getObjective("profession");
             if (professionObj == null) {
-                // Isso não deve acontecer se o PlayerJoinHandler funcionou
                 return;
             }
 
-            // ATUALIZA O PLACAR
+            // 1. Atualiza o placar
             Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
             professionScore.setScore(msg.professionId);
 
-            player.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
-                progress.resetProgress();
-            });
-
-            // Envia o novo ID de profissão de volta ao cliente
-            PacketHandler.INSTANCE.send(
-                    PacketDistributor.PLAYER.with(() -> player),
-                    new ClientboundSyncProfessionPacket(msg.professionId)
-            );
-
+            // 2. Reseta o progresso e sincroniza com o cliente (só precisa fazer uma vez)
             player.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
                 progress.resetProgress(); // Limpa os dados no servidor
 
                 // Envia a lista de progresso VAZIA para o cliente
                 PacketHandler.INSTANCE.send(
                         PacketDistributor.PLAYER.with(() -> player),
-                        new ClientboundSyncProgressPacket(Collections.emptySet()) // Envia o reset
+                        new ClientboundSyncProgressPacket(Collections.emptySet())
                 );
             });
 
-            // Envia o novo ID de PROFISSÃO (código antigo)
+            // 3. Envia o novo ID de PROFISSÃO de volta ao cliente
             PacketHandler.INSTANCE.send(
                     PacketDistributor.PLAYER.with(() -> player),
                     new ClientboundSyncProfessionPacket(msg.professionId)
             );
-
-            // (Opcional) Enviar mensagem de confirmação
-            // player.displayClientMessage(new TextComponent("Profissão alterada!"), false);
         });
         ctx.get().setPacketHandled(true);
     }

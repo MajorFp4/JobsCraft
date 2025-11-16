@@ -32,45 +32,31 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         return PLUGIN_UID;
     }
 
-    /**
-     * Chamado quando o JEI está pronto.
-     */
     @Override
     public void onRuntimeAvailable(IJeiRuntime runtime) {
         JobsCraftJEIPlugin.jeiRuntime = runtime;
-
-        // REMOVEMOS a linha do "addUpdateListener"
-
-        // Aplicamos o filtro uma vez quando o jogo inicia
         JobsCraftIngredientHider.onIngredientsUpdated(runtime.getIngredientManager());
     }
 
-    // REMOVEMOS O MÉTODO 'onIngredientsUpdate' INTEIRO
-    // (Ele causava o erro @Override)
-
-    /**
-     * Este é o "gatilho" que podemos chamar de qualquer lugar para
-     * forçar o JEI a re-filtrar sua lista de itens.
-     */
     public static void refreshJEIFilter() {
         if (jeiRuntime != null) {
-            // CORREÇÃO: O "refresh" é só chamar nossa lógica de esconder/mostrar de novo
             JobsCraftIngredientHider.onIngredientsUpdated(jeiRuntime.getIngredientManager());
         }
     }
 
+    // --- LÓGICA DE CHECAGEM DE TAG (DO ITEMUSEHANDLER) ---
     private static boolean isItemInList(ItemStack stack, String listEntry) {
         if (listEntry.startsWith("#")) {
-            // É uma Tag
             String tagName = listEntry.substring(1);
             TagKey<Item> tagKey = ItemTags.create(new ResourceLocation(tagName));
             return stack.is(tagKey);
         } else {
-            // É um Item ID
             ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(stack.getItem());
             return itemRL != null && itemRL.toString().equals(listEntry);
         }
     }
+
+    // --- MÉTODO AUXILIAR PARA BASE_ITEMS ---
     private static boolean isBaseItem(Profession prof, ItemStack stack) {
         for (String baseItemEntry : prof.getBaseItems()) {
             if (isItemInList(stack, baseItemEntry)) {
@@ -81,32 +67,32 @@ public class JobsCraftJEIPlugin implements IModPlugin {
     }
 
     /**
-     * Esta é a lógica principal do seu mod!
-     * (Esta função estava CORRETA e não precisa de mudanças)
+     * Lógica principal de visibilidade do JEI
      */
     public static boolean isItemVisible(ItemStack itemStack) {
         ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
         if (itemRL == null) {
-            return true;
+            return true; // Mostra itens sem ID
         }
         String itemModId = itemRL.getNamespace();
 
         Profession currentProfession = JobsConfig.getProfession(ClientCache.CURRENT_PROFESSION_ID);
 
-        // Se o jogador é "NONE" (ID 0)
+        // --- CASO 1: SEM PROFISSÃO (ID 0) ---
         if (currentProfession == null) {
             Set<String> allTechModIds = JobsConfig.getAllProfessions().stream()
                     .map(Profession::getTechnicalMod)
                     .filter(id -> !id.equals("none"))
                     .collect(Collectors.toSet());
 
+            // Se o item pertence a um mod técnico, esconde
             return !allTechModIds.contains(itemModId);
         }
 
-        // 2. O JOGADOR TEM UMA PROFISSÃO
+        // --- CASO 2: COM PROFISSÃO ---
         String currentTechModId = currentProfession.getTechnicalMod();
 
-        // 3. SE FOR UMA PROFISSÃO TÉCNICA (ex: "mekanism")
+        // SE FOR PROFISSÃO TÉCNICA (ex: "mekanism")
         if (!currentTechModId.equals("none")) {
 
             // Esconde itens de OUTROS mods técnicos
@@ -122,15 +108,16 @@ public class JobsCraftJEIPlugin implements IModPlugin {
             if (itemModId.equals(currentTechModId)) {
 
                 // --- LÓGICA CORRIGIDA ---
-                // Agora usamos a nova função que entende Tags
                 boolean isBaseItem = isBaseItem(currentProfession, itemStack);
                 boolean hasBeenCrafted = ClientCache.CRAFTED_ITEMS.contains(itemRL);
 
+                // Mostra o item se ele for "básico" OU se já foi fabricado
                 return isBaseItem || hasBeenCrafted;
             }
 
-        } else {
-            // 4. SE FOR UMA PROFISSÃO NÃO-TÉCNICA (ex: "Mineiro")
+        } else { // SE FOR PROFISSÃO NÃO-TÉCNICA (ex: "Mineiro")
+
+            // Esconde TODOS os itens de TODOS os mods técnicos
             Set<String> allTechModIds = JobsConfig.getAllProfessions().stream()
                     .map(Profession::getTechnicalMod)
                     .filter(id -> !id.equals("none"))
@@ -139,6 +126,6 @@ public class JobsCraftJEIPlugin implements IModPlugin {
             return !allTechModIds.contains(itemModId);
         }
 
-        return true; // Mostra itens (ex: Vanilla)
+        return true; // Mostra tudo o que sobrou (ex: Itens Vanilla)
     }
 }
