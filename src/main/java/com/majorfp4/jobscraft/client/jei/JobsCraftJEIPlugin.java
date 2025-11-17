@@ -6,11 +6,18 @@ import com.majorfp4.jobscraft.config.JobsConfig;
 import com.majorfp4.jobscraft.config.Profession;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.gui.handlers.IRecipeSlotClickListener;
 import mezz.jei.api.ingredients.IIngredientType;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
+import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
+import mezz.jei.api.runtime.IRecipesGui;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraftforge.registries.ForgeRegistries;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +49,49 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         JobsCraftIngredientHider.onIngredientsUpdated(ingredientManager);
     }
 
+    @Override
+    public void registerRecipes(IRecipeRegistration registration) {
+        // Pede ao JEI para usar nossa lógica para validar TODAS as receitas de fabricação
+        registration.addRecipeHidingValidator(recipe -> {
+            if (recipe == null) {
+                return false; // Não esconder
+            }
+
+            // Pede ao nosso helper do CLIENTE para verificar.
+            // Retorna 'true' (esconder) se a receita NÃO estiver desbloqueada.
+            return !RecipeValidationHelper.isRecipeUnlocked(recipe);
+        });
+    }
+
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        // Adiciona um listener global de clique
+        registration.addRecipeSlotClickListener(new IRecipeSlotClickListener() {
+            @Override
+            public boolean onRecipeSlotClick(IRecipesGui recipesGui, mezz.jei.api.recipe.IFocus<?> focus, RecipeIngredientRole role) {
+                if (focus != null && (role == RecipeIngredientRole.INPUT || role == RecipeIngredientRole.OUTPUT)) {
+
+                    ItemStack itemStack = focus.getTypedValue().getIngredient(mezz.jei.api.ingredients.VanillaTypes.ITEM_STACK).orElse(null);
+                    if (itemStack == null || itemStack.isEmpty()) {
+                        return false;
+                    }
+
+                    // Se o item NÃO estiver visível (pela nossa lógica de hider),
+                    // o clique é cancelado.
+                    if (!JobsCraftJEIPlugin.isItemVisible(itemStack)) {
+                        return true; // Cancela o clique (bloqueia R/U)
+                    }
+                }
+                return false; // Permite o clique
+            }
+        });
+    }
+
     public static void refreshJEIFilter() {
         if (jeiRuntime != null) {
             JobsCraftIngredientHider.onIngredientsUpdated(jeiRuntime.getIngredientManager());
+            jeiRuntime.getRecipeManager().unhideRecipes(RecipeTypes.CRAFTING, jeiRuntime.getRecipeManager().getRecipes(RecipeTypes.CRAFTING));
+            jeiRuntime.getRecipeManager().hideRecipes(RecipeTypes.CRAFTING, jeiRuntime.getRecipeManager().getRecipes(RecipeTypes.CRAFTING));
         }
     }
 
