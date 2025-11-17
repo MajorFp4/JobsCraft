@@ -26,6 +26,17 @@ public class RecipeHelper {
         return false;
     }
 
+    private static boolean isItemInList(ItemStack stack, String listEntry) {
+        if (listEntry.startsWith("#")) {
+            String tagName = listEntry.substring(1);
+            TagKey<Item> tagKey = ItemTags.create(new ResourceLocation(tagName));
+            return stack.is(tagKey);
+        } else {
+            ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(stack.getItem());
+            return itemRL != null && itemRL.toString().equals(listEntry);
+        }
+    }
+
     private static boolean isBaseItem(Profession prof, ItemStack stack) {
         for (String baseItemEntry : prof.getBaseItems()) {
             if (isItemInList(stack, baseItemEntry)) {

@@ -7,15 +7,15 @@ import com.majorfp4.jobscraft.config.Profession;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
-import mezz.jei.api.constants.VanillaRecipeCategoryUid;
 import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
-import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.recipe.IFocus;
+import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
@@ -61,14 +61,22 @@ public class JobsCraftJEIPlugin implements IModPlugin {
     private static void updateRecipeVisibility() {
         if (jeiRuntime == null) return;
 
+        RecipeType<CraftingRecipe> craftingType = RecipeTypes.CRAFTING;
+
+        @SuppressWarnings("unchecked")
         IRecipeCategory<CraftingRecipe> craftingCategory =
-                jeiRuntime.getRecipeManager().getRecipeCategory(VanillaRecipeCategoryUid.CRAFTING);
+                (IRecipeCategory<CraftingRecipe>) jeiRuntime.getRecipeManager().getRecipeCategory(craftingType.getUid(), false);
 
-        if (craftingCategory == null) return;
+        if (craftingCategory == null) {
+            System.err.println("[JobsCraft] Falha ao encontrar a categoria de Crafting do JEI!");
+            return;
+        }
 
+        List<IFocus<?>> focuses = Collections.emptyList();
+        @SuppressWarnings("deprecation")
         List<CraftingRecipe> allRecipes = jeiRuntime.getRecipeManager().getRecipes(
                 craftingCategory,
-                Collections.emptyList(),
+                focuses,
                 true
         );
 
@@ -84,10 +92,10 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         }
 
         if (!recipesToHide.isEmpty()) {
-            jeiRuntime.getRecipeManager().hideRecipes(RecipeTypes.CRAFTING, recipesToHide);
+            jeiRuntime.getRecipeManager().hideRecipes(craftingType, recipesToHide);
         }
         if (!recipesToShow.isEmpty()) {
-            jeiRuntime.getRecipeManager().unhideRecipes(RecipeTypes.CRAFTING, recipesToShow);
+            jeiRuntime.getRecipeManager().unhideRecipes(craftingType, recipesToShow);
         }
     }
 
