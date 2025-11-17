@@ -23,7 +23,7 @@ public class ClientGuiHandler {
             InventoryScreen inventoryScreen = (InventoryScreen) event.getScreen();
 
             int x = inventoryScreen.getGuiLeft() + -390;
-            int y = inventoryScreen.getGuiTop() + +275;
+            int y = inventoryScreen.getGuiTop() + +270;
             int width = 40;
             int height = 20;
 
