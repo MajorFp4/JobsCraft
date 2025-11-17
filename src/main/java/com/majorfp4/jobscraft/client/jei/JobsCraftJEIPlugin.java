@@ -7,19 +7,18 @@ import com.majorfp4.jobscraft.config.Profession;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
-import mezz.jei.api.gui.handlers.IRecipeSlotClickListener;
 import mezz.jei.api.ingredients.IIngredientType;
-import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.registration.IGuiHandlerRegistration;
+import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
-import mezz.jei.api.runtime.IRecipesGui;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraftforge.registries.ForgeRegistries;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,18 +46,16 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         MASTER_ITEM_STACK_LIST.clear();
         MASTER_ITEM_STACK_LIST.addAll(ingredientManager.getAllIngredients(itemType));
         JobsCraftIngredientHider.onIngredientsUpdated(ingredientManager);
+        updateRecipeVisibility();
     }
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        // Pede ao JEI para usar nossa lógica para validar TODAS as receitas de fabricação
         registration.addRecipeHidingValidator(recipe -> {
             if (recipe == null) {
                 return false; // Não esconder
             }
 
-            // Pede ao nosso helper do CLIENTE para verificar.
-            // Retorna 'true' (esconder) se a receita NÃO estiver desbloqueada.
             return !RecipeValidationHelper.isRecipeUnlocked(recipe);
         });
     }
@@ -92,6 +89,38 @@ public class JobsCraftJEIPlugin implements IModPlugin {
             JobsCraftIngredientHider.onIngredientsUpdated(jeiRuntime.getIngredientManager());
             jeiRuntime.getRecipeManager().unhideRecipes(RecipeTypes.CRAFTING, jeiRuntime.getRecipeManager().getRecipes(RecipeTypes.CRAFTING));
             jeiRuntime.getRecipeManager().hideRecipes(RecipeTypes.CRAFTING, jeiRuntime.getRecipeManager().getRecipes(RecipeTypes.CRAFTING));
+            updateRecipeVisibility();
+        }
+    }
+
+    private static void updateRecipeVisibility() {
+        if (jeiRuntime == null) return;
+
+        IRecipeCategory<?> craftingCategory = jeiRuntime.getRecipeManager().getRecipeCategory(RecipeTypes.CRAFTING);
+        if (craftingCategory == null) return;
+
+        List<?> allCraftingRecipes = jeiRuntime.getRecipeManager().getRecipes(craftingCategory);
+
+        List<Object> recipesToHide = new ArrayList<>();
+        List<Object> recipesToShow = new ArrayList<>();
+
+        for (Object recipeObj : allCraftingRecipes) {
+            if (recipeObj instanceof Recipe<?>) {
+                Recipe<?> recipe = (Recipe<?>) recipeObj;
+
+                if (RecipeValidationHelper.isRecipeUnlocked(recipe)) {
+                    recipesToShow.add(recipe);
+                } else {
+                    recipesToHide.add(recipe);
+                }
+            }
+        }
+
+        if (!recipesToHide.isEmpty()) {
+            jeiRuntime.getRecipeManager().hideRecipes(craftingCategory, recipesToHide);
+        }
+        if (!recipesToShow.isEmpty()) {
+            jeiRuntime.getRecipeManager().unhideRecipes(craftingCategory, recipesToShow);
         }
     }
 

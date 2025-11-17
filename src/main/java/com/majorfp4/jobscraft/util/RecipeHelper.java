@@ -17,15 +17,13 @@ import java.util.List;
 
 public class RecipeHelper {
 
-    private static boolean isItemInList(ItemStack stack, String listEntry) {
-        if (listEntry.startsWith("#")) {
-            String tagName = listEntry.substring(1);
-            TagKey<Item> tagKey = ItemTags.create(new ResourceLocation(tagName));
-            return stack.is(tagKey);
-        } else {
-            ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(stack.getItem());
-            return itemRL != null && itemRL.toString().equals(listEntry);
+    private static boolean isItemInList(ItemStack stack, List<String> list) {
+        for (String entry : list) {
+            if (isItemInList(stack, entry)) {
+                return true;
+            }
         }
+        return false;
     }
 
     private static boolean isBaseItem(Profession prof, ItemStack stack) {
