@@ -7,6 +7,7 @@ import com.majorfp4.jobscraft.config.Profession;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.constants.VanillaRecipeCategoryUid;
 import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.registration.IRecipeRegistration;
@@ -18,7 +19,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class JobsCraftJEIPlugin implements IModPlugin {
 
     private static final ResourceLocation PLUGIN_UID = new ResourceLocation(JobsCraft.MOD_ID, "main");
     private static IJeiRuntime jeiRuntime;
+
     private static final List<ItemStack> MASTER_ITEM_STACK_LIST = new ArrayList<>();
 
     @Override
@@ -49,46 +51,9 @@ public class JobsCraftJEIPlugin implements IModPlugin {
         updateRecipeVisibility();
     }
 
-    @Override
-    public void registerRecipes(IRecipeRegistration registration) {
-        registration.addRecipeHidingValidator(recipe -> {
-            if (recipe == null) {
-                return false; // Não esconder
-            }
-
-            return !RecipeValidationHelper.isRecipeUnlocked(recipe);
-        });
-    }
-
-    @Override
-    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        // Adiciona um listener global de clique
-        registration.addRecipeSlotClickListener(new IRecipeSlotClickListener() {
-            @Override
-            public boolean onRecipeSlotClick(IRecipesGui recipesGui, mezz.jei.api.recipe.IFocus<?> focus, RecipeIngredientRole role) {
-                if (focus != null && (role == RecipeIngredientRole.INPUT || role == RecipeIngredientRole.OUTPUT)) {
-
-                    ItemStack itemStack = focus.getTypedValue().getIngredient(mezz.jei.api.ingredients.VanillaTypes.ITEM_STACK).orElse(null);
-                    if (itemStack == null || itemStack.isEmpty()) {
-                        return false;
-                    }
-
-                    // Se o item NÃO estiver visível (pela nossa lógica de hider),
-                    // o clique é cancelado.
-                    if (!JobsCraftJEIPlugin.isItemVisible(itemStack)) {
-                        return true; // Cancela o clique (bloqueia R/U)
-                    }
-                }
-                return false; // Permite o clique
-            }
-        });
-    }
-
     public static void refreshJEIFilter() {
         if (jeiRuntime != null) {
             JobsCraftIngredientHider.onIngredientsUpdated(jeiRuntime.getIngredientManager());
-            jeiRuntime.getRecipeManager().unhideRecipes(RecipeTypes.CRAFTING, jeiRuntime.getRecipeManager().getRecipes(RecipeTypes.CRAFTING));
-            jeiRuntime.getRecipeManager().hideRecipes(RecipeTypes.CRAFTING, jeiRuntime.getRecipeManager().getRecipes(RecipeTypes.CRAFTING));
             updateRecipeVisibility();
         }
     }
@@ -96,31 +61,33 @@ public class JobsCraftJEIPlugin implements IModPlugin {
     private static void updateRecipeVisibility() {
         if (jeiRuntime == null) return;
 
-        IRecipeCategory<?> craftingCategory = jeiRuntime.getRecipeManager().getRecipeCategory(RecipeTypes.CRAFTING);
+        IRecipeCategory<CraftingRecipe> craftingCategory =
+                jeiRuntime.getRecipeManager().getRecipeCategory(VanillaRecipeCategoryUid.CRAFTING);
+
         if (craftingCategory == null) return;
 
-        List<?> allCraftingRecipes = jeiRuntime.getRecipeManager().getRecipes(craftingCategory);
+        List<CraftingRecipe> allRecipes = jeiRuntime.getRecipeManager().getRecipes(
+                craftingCategory,
+                Collections.emptyList(),
+                true
+        );
 
-        List<Object> recipesToHide = new ArrayList<>();
-        List<Object> recipesToShow = new ArrayList<>();
+        List<CraftingRecipe> recipesToHide = new ArrayList<>();
+        List<CraftingRecipe> recipesToShow = new ArrayList<>();
 
-        for (Object recipeObj : allCraftingRecipes) {
-            if (recipeObj instanceof Recipe<?>) {
-                Recipe<?> recipe = (Recipe<?>) recipeObj;
-
-                if (RecipeValidationHelper.isRecipeUnlocked(recipe)) {
-                    recipesToShow.add(recipe);
-                } else {
-                    recipesToHide.add(recipe);
-                }
+        for (CraftingRecipe recipe : allRecipes) {
+            if (RecipeValidationHelper.isRecipeUnlocked(recipe)) {
+                recipesToShow.add(recipe);
+            } else {
+                recipesToHide.add(recipe);
             }
         }
 
         if (!recipesToHide.isEmpty()) {
-            jeiRuntime.getRecipeManager().hideRecipes(craftingCategory, recipesToHide);
+            jeiRuntime.getRecipeManager().hideRecipes(RecipeTypes.CRAFTING, recipesToHide);
         }
         if (!recipesToShow.isEmpty()) {
-            jeiRuntime.getRecipeManager().unhideRecipes(craftingCategory, recipesToShow);
+            jeiRuntime.getRecipeManager().unhideRecipes(RecipeTypes.CRAFTING, recipesToShow);
         }
     }
 
@@ -149,7 +116,6 @@ public class JobsCraftJEIPlugin implements IModPlugin {
     }
 
     public static boolean isItemVisible(ItemStack itemStack) {
-
         ResourceLocation itemRL = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
         if (itemRL == null) return true;
         String itemModId = itemRL.getNamespace();
