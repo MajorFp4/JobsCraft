@@ -20,7 +20,8 @@ public class RecipeValidationHelper {
         Profession prof = JobsConfig.getProfession(ClientCache.CURRENT_PROFESSION_ID);
         ResourceLocation outputRL = recipe.getResultItem().getItem().getRegistryName();
 
-        if (outputRL == null) return true;
+        if (outputRL == null)
+            return true;
 
         String outputModId = outputRL.getNamespace();
 
@@ -30,7 +31,8 @@ public class RecipeValidationHelper {
                 .findFirst()
                 .orElse(null);
 
-        if (techModId == null) return true;
+        if (techModId == null)
+            return true;
 
         if (prof == null || !prof.getTechnicalMod().equals(techModId)) {
             return false;
@@ -38,24 +40,51 @@ public class RecipeValidationHelper {
 
         Set<ResourceLocation> craftedItems = ClientCache.CRAFTED_ITEMS;
         List<String> baseItems = prof.getBaseItems();
+        boolean hasRestrictedIngredients = false;
+        boolean knowsAtLeastOne = false;
 
         for (Ingredient ingredient : recipe.getIngredients()) {
-            if (ingredient.isEmpty()) continue;
+            if (ingredient.isEmpty())
+                continue;
 
             ItemStack repStack = ingredient.getItems().length > 0 ? ingredient.getItems()[0] : ItemStack.EMPTY;
-            if (repStack.isEmpty()) continue;
+            if (repStack.isEmpty())
+                continue;
 
             ResourceLocation ingRL = repStack.getItem().getRegistryName();
-            if (ingRL == null) continue;
+            if (ingRL == null)
+                continue;
 
-            if (!ingRL.getNamespace().equals(techModId)) continue;
+            if (!ingRL.getNamespace().equals(techModId))
+                continue;
 
+            hasRestrictedIngredients = true;
             boolean isBase = isItemInList(repStack, baseItems);
             boolean isCrafted = craftedItems.contains(ingRL);
 
-            if (!isBase && !isCrafted) {
-                return false;
+            if (isBase || isCrafted) {
+                knowsAtLeastOne = true;
             }
+        }
+
+        if (outputRL.getPath().contains("advanced_control_circuit")) {
+            System.out.println("DEBUG: [RecipeValidationHelper] Checking recipe for Advanced Control Circuit");
+            System.out.println("  - Has Restricted Ingredients: " + hasRestrictedIngredients);
+            System.out.println("  - Knows At Least One: " + knowsAtLeastOne);
+        }
+
+        if (hasRestrictedIngredients) {
+            return knowsAtLeastOne;
+        }
+
+        if (!hasRestrictedIngredients) {
+            // If we are here, it means the output IS restricted (checked at start of
+            // method),
+            // but NO ingredients were restricted.
+            // In this case, we must ensure the output item itself is unlocked.
+            boolean isOutputBase = isItemInList(recipe.getResultItem(), baseItems);
+            boolean isOutputCrafted = craftedItems.contains(outputRL);
+            return isOutputBase || isOutputCrafted;
         }
 
         return true;

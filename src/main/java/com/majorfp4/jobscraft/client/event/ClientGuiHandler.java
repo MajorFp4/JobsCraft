@@ -8,6 +8,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RecipesUpdatedEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.TagsUpdatedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -30,8 +31,7 @@ public class ClientGuiHandler {
             Button jobsButton = new Button(x, y, width, height, new TextComponent("Jobs"),
                     (button) -> {
                         Minecraft.getInstance().setScreen(new JobsMenuScreen());
-                    }
-            );
+                    });
 
             event.addListener(jobsButton);
         }
@@ -41,6 +41,12 @@ public class ClientGuiHandler {
     public void onTagsUpdated(TagsUpdatedEvent event) {
         System.out.println("[JobsCraft] Tags do cliente sincronizadas. Atualizando filtro do JEI.");
 
+        JobsCraftJEIPlugin.refreshJEIFilter();
+    }
+
+    @SubscribeEvent
+    public void onRecipesUpdated(RecipesUpdatedEvent event) {
+        System.out.println("[JobsCraft] Receitas do cliente sincronizadas. Atualizando filtro do JEI.");
         JobsCraftJEIPlugin.refreshJEIFilter();
     }
 }

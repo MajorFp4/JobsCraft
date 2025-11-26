@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.criteria.ObjectiveCriteria; // <-- IMPORTAÇÃO ADICIONADA
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -25,21 +25,20 @@ public class PlayerJoinHandler {
 
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayer serverPlayer)) return;
+        if (!(event.getPlayer() instanceof ServerPlayer serverPlayer))
+            return;
 
         Scoreboard scoreboard = serverPlayer.getScoreboard();
 
         // Usamos a versão que recebe o nome da criteria ("dummy") para compatibilidade
         Objective professionObj = scoreboard.getObjective(PROFESSION_OBJECTIVE);
         if (professionObj == null) {
-            // LINHA CORRIGIDA
             professionObj = scoreboard.addObjective(PROFESSION_OBJECTIVE, ObjectiveCriteria.DUMMY,
                     new TextComponent("Profession"), ObjectiveCriteria.RenderType.INTEGER);
         }
 
         Objective skillObj = scoreboard.getObjective(SKILL_OBJECTIVE);
         if (skillObj == null) {
-            // LINHA CORRIGIDA
             skillObj = scoreboard.addObjective(SKILL_OBJECTIVE, ObjectiveCriteria.DUMMY,
                     new TextComponent("Skill"), ObjectiveCriteria.RenderType.INTEGER);
         }
@@ -56,16 +55,17 @@ public class PlayerJoinHandler {
         if (skillScore.getScore() == 0) {
             skillScore.setScore(1);
         }
+
+        System.out.println("DEBUG: Sending Profession Sync Packet to " + serverPlayer.getName().getString() + ". ID: "
+                + professionScore.getScore());
         PacketHandler.INSTANCE.send(
                 PacketDistributor.PLAYER.with(() -> serverPlayer),
-                new ClientboundSyncProfessionPacket(professionScore.getScore())
-        );
+                new ClientboundSyncProfessionPacket(professionScore.getScore()));
 
         serverPlayer.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
             PacketHandler.INSTANCE.send(
                     PacketDistributor.PLAYER.with(() -> serverPlayer),
-                    new ClientboundSyncProgressPacket(progress.getCraftedItems())
-            );
+                    new ClientboundSyncProgressPacket(progress.getCraftedItems()));
         });
     }
 }

@@ -57,6 +57,8 @@ public class JobsConfig {
                 PROFESSIONS_BY_ID.put(profession.getId(), profession);
 
                 System.out.println("[JobsMod] Profissão carregada: " + name + " (ID: " + id + ")");
+                System.out.println("[JobsMod] - Technical Mod: " + technicalMod);
+                System.out.println("[JobsMod] - Base Items: " + baseItems);
             } catch (Exception e) {
                 System.err.println("[JobsMod] Erro ao carregar " + file.getName() + ": " + e.getMessage());
             }

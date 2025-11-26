@@ -33,6 +33,7 @@ public class ClientboundSyncProfessionPacket {
             // Código executado na thread principal do Cliente
 
             // ATUALIZA O CACHE DO CLIENTE
+            System.out.println("DEBUG: Received Profession Sync Packet. ID: " + msg.professionId);
             ClientCache.CURRENT_PROFESSION_ID = msg.professionId;
             JobsCraftJEIPlugin.refreshJEIFilter();
         });
