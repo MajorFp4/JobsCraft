@@ -32,7 +32,8 @@ public class ServerboundChangeProfessionPacket {
     public static void handle(ServerboundChangeProfessionPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player == null) return;
+            if (player == null)
+                return;
 
             Scoreboard scoreboard = player.getScoreboard();
             Objective professionObj = scoreboard.getObjective("profession");
@@ -43,19 +44,24 @@ public class ServerboundChangeProfessionPacket {
             Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
             professionScore.setScore(msg.professionId);
 
+            // Reset Skill Level
+            Objective skillObj = scoreboard.getObjective("skill");
+            if (skillObj != null) {
+                Score skillScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), skillObj);
+                skillScore.setScore(161);
+            }
+
             player.getCapability(TechProgressionCapability.PLAYER_PROGRESS).ifPresent(progress -> {
                 progress.resetProgress();
 
                 PacketHandler.INSTANCE.send(
                         PacketDistributor.PLAYER.with(() -> player),
-                        new ClientboundSyncProgressPacket(Collections.emptySet())
-                );
+                        new ClientboundSyncProgressPacket(Collections.emptySet()));
             });
 
             PacketHandler.INSTANCE.send(
                     PacketDistributor.PLAYER.with(() -> player),
-                    new ClientboundSyncProfessionPacket(msg.professionId)
-            );
+                    new ClientboundSyncProfessionPacket(msg.professionId));
             RecipeHandler.sendUpdatedRecipes(player);
         });
         ctx.get().setPacketHandled(true);

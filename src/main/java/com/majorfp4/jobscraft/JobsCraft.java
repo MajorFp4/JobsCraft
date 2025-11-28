@@ -3,6 +3,7 @@ package com.majorfp4.jobscraft;
 import com.majorfp4.jobscraft.config.JobsConfig;
 import com.majorfp4.jobscraft.client.ClientSetup;
 import com.majorfp4.jobscraft.config.JobsConfig;
+import com.majorfp4.jobscraft.config.JobsCraftConfig;
 import com.majorfp4.jobscraft.network.PacketHandler;
 import com.majorfp4.jobscraft.event.CapabilityHandler;
 import net.minecraftforge.api.distmarker.Dist;
@@ -21,6 +22,9 @@ public class JobsCraft {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(CapabilityHandler::registerCapabilities);
+
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.COMMON, JobsCraftConfig.SPEC, "JobsCraftConfig.toml");
 
         MinecraftForge.EVENT_BUS.register(this);
 

@@ -1,6 +1,7 @@
 package com.majorfp4.jobscraft.event;
 
 import com.majorfp4.jobscraft.JobsCraft;
+import com.majorfp4.jobscraft.client.ClientCache;
 import com.majorfp4.jobscraft.config.JobsConfig;
 import com.majorfp4.jobscraft.config.Profession;
 import net.minecraft.network.chat.TextComponent;
@@ -29,7 +30,8 @@ public class BlockInteractionHandler {
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         Player player = event.getPlayer();
-        if (player == null) return;
+        if (player == null)
+            return;
 
         BlockState clickedState = player.level.getBlockState(event.getPos());
         ItemStack itemInHand = player.getItemInHand(event.getHand());
@@ -57,13 +59,38 @@ public class BlockInteractionHandler {
             event.setCanceled(true);
             if (player.level.isClientSide()) {
                 player.displayClientMessage(new TextComponent(message), true);
+
+                // DEBUG LOG
+                BlockState stateToCheck = (itemInHand.getItem() instanceof BlockItem blockItem)
+                        ? blockItem.getBlock().defaultBlockState()
+                        : clickedState;
+                ResourceLocation blockRL = ForgeRegistries.BLOCKS.getKey(stateToCheck.getBlock());
+                String blockId = (blockRL != null) ? blockRL.toString() : "unknown";
+
+                int playerProfId;
+                if (player.level.isClientSide()) {
+                    playerProfId = ClientCache.CURRENT_PROFESSION_ID;
+                } else {
+                    Scoreboard scoreboard = player.getScoreboard();
+                    Objective professionObj = scoreboard.getObjective("profession");
+                    playerProfId = (professionObj != null)
+                            ? scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj).getScore()
+                            : -1;
+                }
+
+                Profession p = getProfessionByBlock(stateToCheck, blockId);
+                int reqProfId = (p != null) ? p.getId() : -2;
+
+                System.out.println("[JobsCraft] DEBUG CLIENT: Forbidden. PlayerProf: " + playerProfId + ", ReqProf: "
+                        + reqProfId + ", Block: " + blockId);
             }
         }
     }
 
     private static boolean isInteractionForbidden(Player player, BlockState blockState) {
         ResourceLocation blockRL = ForgeRegistries.BLOCKS.getKey(blockState.getBlock());
-        if (blockRL == null) return false;
+        if (blockRL == null)
+            return false;
         String blockId = blockRL.toString();
 
         // 1. Encontra a profissão que o BLOCO exige
@@ -78,19 +105,25 @@ public class BlockInteractionHandler {
         }
 
         // 3. O bloco é exclusivo. O jogador tem a profissão?
-        Scoreboard scoreboard = player.getScoreboard();
-        Objective professionObj = scoreboard.getObjective("profession");
-        if (professionObj == null) {
-            return true;
+        int playerProfessionId;
+        if (player.level.isClientSide()) {
+            playerProfessionId = ClientCache.CURRENT_PROFESSION_ID;
+        } else {
+            Scoreboard scoreboard = player.getScoreboard();
+            Objective professionObj = scoreboard.getObjective("profession");
+            if (professionObj == null) {
+                return true; // Se não tem objetivo no servidor, algo está errado, bloqueia por segurança ou
+                             // libera?
+                             // Antes retornava true (bloqueado) se null.
+            }
+            Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
+            playerProfessionId = professionScore.getScore();
         }
 
-        Score professionScore = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), professionObj);
-        int playerProfessionId = professionScore.getScore();
         int requiredProfessionId = matchingProfession.getId();
 
         return playerProfessionId != requiredProfessionId;
     }
-
 
     private static boolean isBlockInList(BlockState state, String blockId, List<String> list) {
         for (String entry : list) {
@@ -114,7 +147,8 @@ public class BlockInteractionHandler {
     private static Profession getProfessionByBlock(BlockState state, String blockId) {
         Collection<Profession> professions = JobsConfig.getAllProfessions();
         for (Profession p : professions) {
-            if (isBlockInList(state, blockId, p.getExclusiveBlocks()) || isBlockInList(state, blockId, p.getRelatedBlocks())) {
+            if (isBlockInList(state, blockId, p.getExclusiveBlocks())
+                    || isBlockInList(state, blockId, p.getRelatedBlocks())) {
                 return p;
             }
         }
